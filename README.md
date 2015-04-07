@@ -1,7 +1,6 @@
 LimeSurvey-ShibbolethAuth
 =========================
 
-LimeSurvey 2.05+ Shibboleth auth plugin using SimpleSAMLphp
+LimeSurvey 2.05+ Shibboleth auth plugin
 
-SimpleSAMLphp: https://simplesamlphp.org/
 LimeSurvey: http://www.limesurvey.org/en/
