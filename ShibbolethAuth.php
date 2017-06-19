@@ -9,13 +9,45 @@ class ShibbolethAuth extends AuthPluginBase {
     public $mail = '';
     public $displayName = '';
     protected $settings = array(
-        'authsource' => array(
+			'authuserid' => array(
             'type' => 'string',
-            'label' => 'Auth source'
+            'label' => 'Shibboleth attribute of User ID (eg. eduPersonPrincipalName)',
+            'default' => 'eduPersonPrincipalName',
         ),
-        'permission_create_survey' => array(
+            'authusergivenName' => array(
+            'type' => 'string',
+            'label' => 'Shibboleth attribute of User first name (eg. givenName)',
+            'default' => 'givenName',
+        ),
+            'authusergivenSurname' => array(
+            'type' => 'string',
+            'label' => 'Shibboleth attribute of User surname (eg. sn)',
+            'default' => 'sn',
+        ),
+            'mailattribute' => array(
+            'type' => 'string',
+            'label' => 'Shibboleth attribute of User email address (eg. mail)',
+            'default' => 'mail',
+		),
+            'logoffurl' => array(
+            'type' => 'string',
+            'label' => 'Redirecting url after LogOff',
+            'default' => 'https://my.site.com/Account/Logoff',
+		),
+            'is_default' => array(
             'type' => 'checkbox',
-            'label' => 'Permission create survey'
+            'label' => 'Check to make default authentication method (this disable Default LimeSurvey authentification by database)',
+            'default' => false,
+        ),
+            'autocreateuser' => array(
+            'type' => 'checkbox',
+            'label' => 'Automatically create user if not exists',
+            'default' => true,
+        ),
+            'permission_create_survey' => array(
+            'type' => 'checkbox',
+            'label' => 'Permission create survey',
+            'default' => false,
         )
     );
 
@@ -24,35 +56,45 @@ class ShibbolethAuth extends AuthPluginBase {
 
         $this->subscribe('beforeLogin');
         $this->subscribe('newUserSession');
+		$this->subscribe('afterLogout');
     }
 
     public function beforeLogin() {
-        $authsource = $this->get('authsource');
+		$authuserid = $this->get('authuserid');
+		$authusergivenName = $this->get('authusergivenName');
+		$authusergivenSurname = $this->get('authusergivenSurname');
+		$mailattribute = $this->get('mailattribute');
 
-        // temporary disable Yii autoloader
-        spl_autoload_unregister(array('YiiBase', 'autoload'));
-
-        // create 3rd-party object
-
-        // enable Yii autoloader
-        spl_autoload_register(array('YiiBase', 'autoload'));
-
-        //if (isset($_GET["slogin"]) && ($_GET["slogin"] == 1)) {
-        if (isset($_GET["slogin"])) {
-                if (isset($_SERVER['eduPersonPrincipalName'])) {
-                        $this->setUsername($_SERVER['eduPersonPrincipalName']);
-                        $this->displayName = $_SERVER['cn'];
-                        $mail = $_SERVER['mail'];
-                        if (strpos($mail,';') !== false) {
-                                $mail = explode(";", $mail);
-                                $mail = $mail[0];
-                        }
-                        //$this->displayName = $_SERVER['displayName'];
-                        $this->mail = $mail;
-                }
-
-                $this->setAuthPlugin();
-        }
+		if (!empty($authuserid) && isset($_SERVER[$authuserid]))
+		{
+			$sUser=$_SERVER[$authuserid];
+			
+			// Possible mapping of users to a different identifier
+			$aUserMappings=$this->api->getConfigKey('auth_webserver_user_map', array());
+            if (isset($aUserMappings[$sUser])) 
+            {
+               $sUser = $aUserMappings[$sUser];
+            }
+						
+			// If is set "autocreateuser" option then create the new user
+            if($this->get('autocreateuser',null,null,$this->settings['autocreateuser']['default']))
+            {
+                $this->setUsername($sUser);
+				$this->displayName = $_SERVER[$authusergivenName].' '.$_SERVER[$authusergivenSurname];
+				
+				if($_SERVER[$mailattribute] && $_SERVER[$mailattribute] != '')
+				{
+					$this->mail = $_SERVER[$mailattribute];
+				}
+				else $this->mail = 'noreply@my.site.com';
+				
+                $this->setAuthPlugin(); // This plugin handles authentication, halt further execution of auth plugins
+            }
+            elseif($this->get('is_default',null,null,$this->settings['is_default']['default']))
+            {
+                throw new CHttpException(401,'Wrong credentials for LimeSurvey administration: "' . $sUser . '".');
+            }
+		}
     }
 
     public function newUserSession() {
@@ -66,7 +108,6 @@ class ShibbolethAuth extends AuthPluginBase {
             $oUser->password = hash('sha256', createPassword());
             $oUser->full_name = $this->displayName;
             $oUser->parent_id = 1;
-            $oUser->lang = 'sl';
             $oUser->email = $this->mail;
 
             if ($oUser->save()) {
@@ -77,11 +118,11 @@ class ShibbolethAuth extends AuthPluginBase {
                         'uid' => $oUser->uid,
                         'permission' => 'surveys',
                         'create_p' => 1,
-                        'read_p' => 1,
-                        'update_p' => 1,
-                        'delete_p' => 1,
-                        'import_p' => 1,
-                        'export_p' => 1
+                        'read_p' => 0,
+                        'update_p' => 0,
+                        'delete_p' => 0,
+                        'import_p' => 0,
+                        'export_p' => 0
                     );
 
                     $permission = new Permission;
@@ -99,11 +140,22 @@ class ShibbolethAuth extends AuthPluginBase {
             }
 
             return;
-        } else {
+        } else { // The user alredy exists
             $this->setAuthSuccess($oUser);
         }
     }
 
+	public function afterLogout()
+    {
+		$logoffurl = $this->get('logoffurl');
+		
+		if (!empty($logoffurl))
+		{
+			// Logout Shibboleth
+			header("Location: " . $logoffurl);
+			die();
+		}
+    }
 }
 
 
