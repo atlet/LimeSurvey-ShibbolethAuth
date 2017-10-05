@@ -32,7 +32,7 @@ class ShibbolethAuth extends AuthPluginBase {
             'logoffurl' => array(
             'type' => 'string',
             'label' => 'Redirecting url after LogOff',
-            'default' => 'https://my.site.com/Account/Logoff',
+            'default' => 'https://my.example.com/Account/Logoff',
 		),
             'is_default' => array(
             'type' => 'checkbox',
@@ -86,7 +86,7 @@ class ShibbolethAuth extends AuthPluginBase {
 				{
 					$this->mail = $_SERVER[$mailattribute];
 				}
-				else $this->mail = 'noreply@my.site.com';
+				else $this->mail = 'noreply@my.example.com';
 				
                 $this->setAuthPlugin(); // This plugin handles authentication, halt further execution of auth plugins
             }
