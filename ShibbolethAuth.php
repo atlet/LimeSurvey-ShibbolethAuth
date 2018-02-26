@@ -51,7 +51,7 @@ class ShibbolethAuth extends AuthPluginBase {
         )
     );
 
-    public function __construct(PluginManager $manager, $id) {
+    public function __construct(\LimeSurvey\PluginManager\PluginManager $manager, $id) {
         parent::__construct($manager, $id);
 
         $this->subscribe('beforeLogin');
