@@ -60,6 +60,13 @@ class ShibbolethAuth extends AuthPluginBase {
     }
 
     public function beforeLogin() {
+		// Do nothing if this user is not ShibbolethAuth type
+		$identity = $this->getEvent()->get('identity');
+		if ($identity->plugin != 'ShibbolethAuth') 
+		{
+			return;
+		}
+
 		$authuserid = $this->get('authuserid');
 		$authusergivenName = $this->get('authusergivenName');
 		$authusergivenSurname = $this->get('authusergivenSurname');
