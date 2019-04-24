@@ -1,0 +1,15 @@
+<config>
+    <metadata>
+        <name>LimeSurvey-ShibbolethAuth</name>
+        <type>plugin</type>
+        <creationDate>2014-04-05</creationDate>
+        <lastUpdate>2019-04-24</lastUpdate>
+        <author>Andraž Prinčič</author>
+        <authorUrl>https://www.princic.net</authorUrl>
+        <supportUrl>https://github.com/atlet/LimeSurvey-ShibbolethAuth/issues</supportUrl>
+        <version>1.0.0</version>
+        <lastSecurityUpdate>1.0.0</lastSecurityUpdate>
+        <license>GNU General Public License version 2 or later</license>
+        <description><![CDATA[LimeSurvey Shibboleth auth plugin.]]></description>
+    </metadata>
+</config>
